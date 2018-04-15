@@ -13,8 +13,13 @@ struct IMG{
 	std::string filename;
 	int w,h,c,w0,w1,h0,h1;
 	IMG():img(NULL),w(0),h(0),c(0){}
-	IMG(int _h,int _w,int _c=1):h(_h),w(_w),c(_c)
+	IMG(int _h,int _w,int _c=1)
 	{
+		init(_h,_w,_c);
+	}
+	void init(int _h,int _w,int _c)
+	{
+		h=_h,w=_w,c=_c;
 		img=new ld[w*h*c];
 		buf=new unsigned char[w*h*c];
 		memset(img,0,sizeof(ld)*w*h*c);
@@ -22,6 +27,7 @@ struct IMG{
 		w0=h0=1<<30,w1=h1=1;
 	}
 	IMG(std::string _):filename(_){
+		if(_=="")return;
 		buf=stbi_load(filename.c_str(),&w,&h,&c,0);
 		img=new ld[w*h*c];
 		for(int i=0;i<w*h*c;++i)
@@ -117,7 +123,7 @@ struct Solver{
 
 int main(int argc, char const *argv[])
 {
-	int ph=0,pw=0,iter=0,before=0,per=1<<30,channel=0;
+	int ph=0,pw=0,iter=2000,before=0,per=1<<30,channel=0;
 	std::string src_name,mask_name,target_name,output_filename;
 	if(argc<=1)
 	{
@@ -157,8 +163,22 @@ int main(int argc, char const *argv[])
 			else if(argv[i][1]=='b'||argv[i][2]=='b')
 				before=atoi(argv[++i]);
 		}
+	if(output_filename=="")
+		output_filename="result.png";
+	if(src_name=="")
+		return!puts("no src name");
+	if(target_name=="")
+		return!puts("no target name");
 	// read data
 	IMG src(src_name),mask(mask_name),target(target_name);
+	if(mask_name==""){
+		mask.init(src.h,src.w,src.c);
+		for(int i=1;i<src.h-1;++i)
+			for(int j=1;j<src.w-1;++j)
+				for(int k=0;k<src.c;++k)
+					getpix(mask,i,j,k)=getbuf(mask,i,j,k)=255;
+	}
+
 	// src.print("src");
 	// mask.print("mask");
 	// target.print("tar");
@@ -205,7 +225,8 @@ int main(int argc, char const *argv[])
 				{
 					// printf("i=%d j=%d k=%d\n",i,j,k);
 					// printf("mapping: %d,%d\n",i-src_grad.h0+mask.h0,j-src_grad.w0+mask.w0,k);
-					sv[k].additem(i*src_grad.w+j,getpix(src,i-src_grad.h0+mask.h0,j-src_grad.w0+mask.w0,k));
+					sv[k].additem(i*src_grad.w+j,getpix(target,h,w,k));
+					// sv[k].additem(i*src_grad.w+j,getpix(src,i-src_grad.h0+mask.h0,j-src_grad.w0+mask.w0,k));
 					sv[k].addconst(getpix(src_grad,i,j,k));
 					if(getbuf(src_grad,i-1,j,k)==255)
 						sv[k].addvar((i-1)*src_grad.w+j);
@@ -242,7 +263,7 @@ int main(int argc, char const *argv[])
 			puts("");
 			if(_!=iter+1){
 				sprintf(str,"iter%d.png",_);
-				// target.write(str);
+				target.write(str);
 			}else target.write(output_filename.c_str());
 		}
 		for(int k=0;k<channel;++k)
