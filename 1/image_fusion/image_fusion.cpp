@@ -36,7 +36,7 @@ struct IMG{
 						buf[getidx(i,j,k,w,c)]>lb?i<h0?h0=i:1,h1<i?h1=i:1,j<w0?w0=j:1,w1<j?w1=j:1:1;
 		// printf("h: %d,%d; w: %d,%d\n",h0,h1,w0,w1);
 	}
-	void write(char* output_filename){
+	void write(const char* output_filename){
 		buf=new unsigned char[w*h*c];
 		for(int i=0;i<w*h*c;++i)
 			buf[i]=img[i]<0?0:img[i]>255?255:img[i];
@@ -48,7 +48,7 @@ struct IMG{
 		puts("--u");
 		for(int i=0;i<w;++i,puts(""))
 			for(int j=0;j<h;++j)
-				printf("%6d ",1l*buf[getidx(i,j,0,w,c)]);
+				printf("%6d ",1*buf[getidx(i,j,0,w,c)]);
 				// printf("%d,%d,%d ",1l*buf[getidx(i,j,0,w,c)],1l*buf[getidx(i,j,1,w,c)],1l*buf[getidx(i,j,2,w,c)]);
 		puts("--f");
 		for(int i=0;i<w;++i,puts(""))
@@ -64,9 +64,9 @@ struct IMG{
 
 struct Solver{
 // 4x1-x2-x3=4
-// var var const
+// 4 var var const
 	int label,id,size;
-	ld *x,*b,*tmp;int **a; // a[id][0]: number; a[id][>0]: -id
+	ld *x,*b,*tmp,err;int **a; // a[id][0]: number; a[id][>0]: -id
 	void resize(int _size)
 	{
 		x=new ld[size=_size];memset(x,0,sizeof(ld)*size);
@@ -100,12 +100,14 @@ struct Solver{
 	}
 	void iter(){
 		// calc tmp=4x+b-Ax
+		err=0;
 		for(int i=0;i<size;++i)
 			if(a[i][0])
 			{
 				tmp[i]=b[i];//-4*x[i];
 				for(int j=1;j<=a[i][0];++j)
 					tmp[i]+=x[a[i][j]];
+				err+=std::abs(tmp[i]-4*x[i]);
 			}
 		for(int i=0;i<size;++i)
 			if(a[i][0])
@@ -115,26 +117,67 @@ struct Solver{
 
 int main(int argc, char const *argv[])
 {
+	int ph=0,pw=0,iter=0,before=0,per=1<<30,channel=0;
+	std::string src_name,mask_name,target_name,output_filename;
+	if(argc<=1)
+	{
+		puts("Poisson image editing      -- powered by n+e");
+		puts("Usage:");
+		puts("    none argument          show this message and exit");
+		puts("    -s SRC                 src filename");
+		puts("    -m MASK                mask filename");
+		puts("    -t TARGET              target filename");
+		puts("    -o OUTPUT              output filename (only support .png)");
+		puts("    -h HEIGHT              where to put src into target, specify HEIGHT");
+		puts("    -w WIDTH               which to put src into target, specift WIDTH");
+		puts("    -i ITERATION           how many ITERATION would you perfer, more is better");
+		puts("    -b NUMBER              output less than NUMBER iterate result");
+		puts("    -p NUMBER              output result every NUMBER iteration");
+		return 0;
+	}
+	for(int i=1;i<argc;++i)
+		if(argv[i][0]=='-')
+		{
+			if(argv[i][1]=='s'||argv[i][2]=='s')
+				src_name=argv[++i];
+			else if(argv[i][1]=='m'||argv[i][2]=='m')
+				mask_name=argv[++i];
+			else if(argv[i][1]=='t'||argv[i][2]=='t')
+				target_name=argv[++i];
+			else if(argv[i][1]=='o'||argv[i][2]=='o')
+				output_filename=argv[++i];
+			else if(argv[i][1]=='h'||argv[i][2]=='h')
+				ph=atoi(argv[++i]);
+			else if(argv[i][1]=='w'||argv[i][2]=='w')
+				pw=atoi(argv[++i]);
+			else if(argv[i][1]=='i'||argv[i][2]=='i')
+				iter=atoi(argv[++i]);
+			else if(argv[i][1]=='p'||argv[i][2]=='p')
+				per=atoi(argv[++i]);
+			else if(argv[i][1]=='b'||argv[i][2]=='b')
+				before=atoi(argv[++i]);
+		}
 	// read data
-	IMG src("test1_src.jpg"),mask("test1_mask.jpg"),target("test1_target.jpg");
+	IMG src(src_name),mask(mask_name),target(target_name);
 	// src.print("src");
 	// mask.print("mask");
 	// target.print("tar");
-	int ph=50,pw=100;
-	assert(src.c==mask.c);
-	assert(src.c==target.c);
+	printf("mask %d src %d target %d\n",mask.c,src.c,target.c);
+	// assert(src.c==mask.c);
+	// assert(src.c==target.c);
+	channel=std::min(src.c,target.c);
 	printf("src size: %d*%d\n",src.h,src.w);
 	mask.stat(200);
 	printf("mask size: %d*%d [%d,%d]*[%d,%d]\n",mask.h,mask.w,mask.h0,mask.h1,mask.w0,mask.w1);
 	printf("target size: %d*%d\n",target.h,target.w);
 	// init
-	IMG src_grad(mask.h1-mask.h0+1,mask.w1-mask.w0+1,mask.c);
+	IMG src_grad(mask.h1-mask.h0+1,mask.w1-mask.w0+1,channel);
 	// src_grad.print("grad");
 
 	for(int i=mask.h0,h=0;i<=mask.h1;++i,++h)
 		for(int j=mask.w0,w=0;j<=mask.w1;++j,++w)
-			for(int k=0;k<=mask.c;++k)
-				if(getpix(mask,i,j,k)>200)
+			for(int k=0;k<=channel;++k)
+				if(getpix(mask,i,j,0)>200)
 					getbuf(src_grad,h,w,k)=255,
 					getpix(src_grad,h,w,k)=getpix(src,i,j,k)*4
 										  -getpix(src,i-1,j,k)
@@ -146,18 +189,18 @@ int main(int argc, char const *argv[])
 	printf("src_grad h:[%d,%d] w:[%d,%d]\n",src_grad.h0,src_grad.h1,src_grad.w0,src_grad.w1);
 	printf("grad done\n");
 	// init solver
-	Solver*sv=new Solver[mask.c];
-	for(int k=0;k<mask.c;++k)
+	Solver*sv=new Solver[channel];
+	for(int k=0;k<channel;++k)
 	{
 		sv[k].label=k;
 		sv[k].resize((src_grad.h1-src_grad.h0+1)*src_grad.w+src_grad.w1-src_grad.w0+1);
 	}
-	printf("solver init\n");
+	printf("solver init ... size = %d\n",sv[0].size);
 	for(int i=src_grad.h0,h=ph;i<=src_grad.h1;++i,++h)
 		for(int j=src_grad.w0,w=pw;j<=src_grad.w1;++j,++w)
 			// (i,j) -> src_grad
 			// (h,w) -> target
-			for(int k=0;k<mask.c;++k)
+			for(int k=0;k<channel;++k)
 				if(getbuf(src_grad,i,j,k)==255)
 				{
 					// printf("i=%d j=%d k=%d\n",i,j,k);
@@ -184,21 +227,26 @@ int main(int argc, char const *argv[])
 	printf("solver init done\n");
 	// sv[0].print();//return 0;
 	// iterate solver
-	for(int _=0;_<=2000;_++)
+	for(int _=1;_<=iter+1;_++)
 	{
-		int vali=0;
-		for(int i=src_grad.h0,h=ph;i<=src_grad.h1;++i,++h)
-			for(int j=src_grad.w0,w=pw;j<=src_grad.w1;++j,++w)
-				for(int k=0;k<mask.c;++k)
-					if(getbuf(src_grad,i,j,k)==255)
-						getpix(target,h,w,k)=sv[k].x[vali=i*src_grad.w+j];
-		if(_%20==0||_<10)
+		if(_%per==0||_<=before||_==iter+1)
 		{
-			printf("%d %lf\n",_,sv[2].x[vali]);
-			sprintf(str,"iter%d.png",_);
-			target.write(str);
+			for(int i=src_grad.h0,h=ph;i<=src_grad.h1;++i,++h)
+				for(int j=src_grad.w0,w=pw;j<=src_grad.w1;++j,++w)
+					for(int k=0;k<channel;++k)
+						if(getbuf(src_grad,i,j,k)==255)
+							getpix(target,h,w,k)=sv[k].x[i*src_grad.w+j];
+			printf("iter %d  err",_);
+			for(int i=0;i<channel;++i)
+				printf(" %lf",sv[i].err);
+			puts("");
+			if(_!=iter+1){
+				sprintf(str,"iter%d.png",_);
+				// target.write(str);
+			}else target.write(output_filename.c_str());
 		}
-		for(int k=0;k<mask.c;++k)
+		for(int k=0;k<channel;++k)
 			sv[k].iter();
 	}
+	return 0;
 }
