@@ -123,7 +123,7 @@ struct Solver{
 
 int main(int argc, char const *argv[])
 {
-	int ph=0,pw=0,iter=2000,before=0,per=1<<30,channel=0;
+	int ph=0,pw=0,iter=2000,before=0,per=1<<30,channel=0,rsm=0;
 	std::string src_name,mask_name,target_name,output_filename;
 	if(argc<=1)
 	{
@@ -139,6 +139,7 @@ int main(int argc, char const *argv[])
 		puts("    -i ITERATION           how many ITERATION would you perfer, more is better");
 		puts("    -b NUMBER              output less than NUMBER iterate result");
 		puts("    -p NUMBER              output result every NUMBER iteration");
+		puts("    -r ITER                resume iteration from ITERth png file");
 		puts("");
 		puts("Example:");
 		puts("    ./image_fusion -s test1_src.jpg -t test1_target.jpg -m test1_mask.jpg -o test1_result.png -p 100 -b 10 -i 5000 -h 50 -w 100");
@@ -165,7 +166,11 @@ int main(int argc, char const *argv[])
 				per=atoi(argv[++i]);
 			else if(argv[i][1]=='b'||argv[i][2]=='b')
 				before=atoi(argv[++i]);
+			else if(argv[i][1]=='r'||argv[i][2]=='r')
+				rsm=atoi(argv[++i]);
 		}
+	if(rsm)
+		sprintf(str,"iter%d.png",rsm);
 	if(output_filename=="")
 		output_filename="result.png";
 	if(src_name=="")
@@ -173,7 +178,7 @@ int main(int argc, char const *argv[])
 	if(target_name=="")
 		return!puts("no target name");
 	// read data
-	IMG src(src_name),mask(mask_name),target(target_name);
+	IMG src(src_name),mask(mask_name),target(target_name),resume(str);
 	if(mask_name==""){
 		mask.init(src.h,src.w,src.c);
 		for(int i=1;i<src.h-1;++i)
@@ -229,7 +234,10 @@ int main(int argc, char const *argv[])
 				{
 					// printf("i=%d j=%d k=%d\n",i,j,k);
 					// printf("mapping: %d,%d\n",i-src_grad.h0+mask.h0,j-src_grad.w0+mask.w0,k);
-					sv[k].additem(i*src_grad.w+j,getpix(target,h,w,k));
+					if(rsm)
+						sv[k].additem(i*src_grad.w+j,getpix(resume,h,w,k));
+					else
+						sv[k].additem(i*src_grad.w+j,getpix(target,h,w,k));
 					// sv[k].additem(i*src_grad.w+j,getpix(src,i-src_grad.h0+mask.h0,j-src_grad.w0+mask.w0,k));
 					sv[k].addconst(getpix(src_grad,i,j,k));
 					if(getbuf(src_grad,i-1,j,k)==255)
@@ -252,7 +260,7 @@ int main(int argc, char const *argv[])
 	printf("solver init done\n");
 	// sv[0].print();//return 0;
 	// iterate solver
-	for(int _=1;_<=iter+1;_++)
+	for(int _=rsm+1;_<=iter+1;_++)
 	{
 		if(_%per==0||_<=before||_==iter+1)
 		{
