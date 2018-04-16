@@ -129,7 +129,7 @@ int main(int argc, char const *argv[])
 	{
 		puts("Poisson image editing      -- powered by n+e");
 		puts("Usage:");
-		puts("    none argument          show this message and exit");
+		puts("    no argument            show this message and exit");
 		puts("    -s SRC                 src filename");
 		puts("    -m MASK                mask filename");
 		puts("    -t TARGET              target filename");
@@ -139,6 +139,9 @@ int main(int argc, char const *argv[])
 		puts("    -i ITERATION           how many ITERATION would you perfer, more is better");
 		puts("    -b NUMBER              output less than NUMBER iterate result");
 		puts("    -p NUMBER              output result every NUMBER iteration");
+		puts("");
+		puts("Example:");
+		puts("    ./image_fusion -s test1_src.jpg -t test1_target.jpg -m test1_mask.jpg -o test1_result.png -p 100 -b 10 -i 5000 -h 50 -w 100");
 		return 0;
 	}
 	for(int i=1;i<argc;++i)
@@ -178,7 +181,8 @@ int main(int argc, char const *argv[])
 				for(int k=0;k<src.c;++k)
 					getpix(mask,i,j,k)=getbuf(mask,i,j,k)=255;
 	}
-
+	assert(mask.w==src.w);
+	assert(mask.h=src.h);
 	// src.print("src");
 	// mask.print("mask");
 	// target.print("tar");
