@@ -3,15 +3,18 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "tools/stb_image_write.h"
 #include "delaunay.h"
+
 #define getidx(i,j,k,w,c) ((i)*(w)*(c)+(j)*(c)+(k))
 struct IMG{
 	ld*img;
 	unsigned char*buf;
 	std::string filename;
-	int w,h,c;
-	IMG():img(NULL),w(0),h(0),c(0){}
+	P pt[120];
+	int w,h,c,len;
+	IMG():img(NULL),w(0),h(0),c(0),len(0){}
 	IMG(int _h,int _w,int _c=1)
 	{
+		len=0;
 		init(_h,_w,_c);
 	}
 	void init(int _h,int _w,int _c)
@@ -25,6 +28,26 @@ struct IMG{
 	IMG(std::string _):filename(_){
 		if(_=="")return;
 		buf=stbi_load(filename.c_str(),&w,&h,&c,0);
+		printf("load image w=%d h=%d c=%d\n",w,h,c);
+		std::string txtname=_+".txt";
+		FILE*fin=fopen(txtname.c_str(),"r");
+		fscanf(fin,"%*d%*d%*d%*d");
+		int x,y,mx=0,my=0;len=0;
+		while(~fscanf(fin,"%d%d",&x,&y))
+			pt[++len]=(P){x,y},mx<x?mx=x:1,my<y?my=y:1;
+		pt[++len]=(P){0,0};
+		pt[++len]=(P){0,w/2};
+		pt[++len]=(P){0,w-1};
+		pt[++len]=(P){h/2,w-1};
+		pt[++len]=(P){h-1,w-1};
+		pt[++len]=(P){h-1,w/2};
+		pt[++len]=(P){h-1,0};
+		pt[++len]=(P){h/2,0};
+		for(int i=1;i<=len;++i)
+		{
+			int x=pt[i].x,y=pt[i].y;
+			buf[getidx(x,y,0,w,c)]=buf[getidx(x,y,1,w,c)]=buf[getidx(x,y,2,w,c)]=255;
+		}
 		img=new ld[w*h*c];
 		for(int i=0;i<w*h*c;++i)
 			img[i]=buf[i];
@@ -55,36 +78,12 @@ struct IMG{
 #define getpix(f,i,j,k) f.img[getidx(i,j,k,f.w,f.c)]
 #define getbuf(f,i,j,k) f.buf[getidx(i,j,k,f.w,f.c)]
 
-
-struct PL{
-	int len;
-	P pt[120];
-	std::string name;
-	void read(std::string _){
-		//input image filename
-		name=_+".txt";
-		FILE*fin=fopen(name.c_str(),"r");
-		fscanf(fin,"%*d%*d%*d%*d");
-		int x,y;
-		while(~fscanf(fin,"%d%d",&x,&y))
-			pt[++len]=(P){x,y};
-	}
-};
-
-int solve(int n,P*p){
-	for(int i=1;i<=n;i++)ori[i]=(P3){p[i].x,p[i].y,i};
-	std::sort(p+1,p+1+n);std::sort(ori+1,ori+1+n);delaunay(1,n);	
-	for(int i=1;i<=n;i++)
-	for(int x,y,j=la[i];j;j=e[j].l)x=ori[i].z,y=ori[e[j].to].z;
-	// d[++tot]=(D){x,y,dis2(p[i]-p[e[j].to])};
-}
-
 int main(int argc, char *argv[])
 {
 	std::string fn1=argv[1],fn2=argv[2],output_filename=argv[3];
 	int rate=atoi(argv[4]);
 	IMG img1(fn1),img2(fn2);
 	assert(img1.c==img2.c);
-
+	img1.write(output_filename.c_str());
 	return 0;
 }

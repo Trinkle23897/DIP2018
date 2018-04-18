@@ -8,25 +8,25 @@ struct P{
 	P operator-(PP a)const {return (P){x-a.x,y-a.y};}
 	ld operator&(PP a)const {return x*a.y-y*a.x;}
 	ld operator|(PP a)const {return x*a.x+y*a.y;}
-}p[N];
+}p[N],around[N];
 #define check(a,b,c) ((b-a)&(c-a))
 ld dis2(PP a){return a.x*a.x+a.y*a.y;}
 #define cross(a,b,c,d) (check(p[a],p[c],p[d])*check(p[b],p[c],p[d])<0&&check(p[c],p[a],p[b])*check(p[d],p[a],p[b])<0)
-
+namespace DT{
 struct P3{
 	ld x,y,z;
-	bool operator<(const P3&a)const {return x<a.x||x==a.x&&y<a.y;}
+	bool operator<(const P3&a)const {return x<a.x||x==a.x&&(y<a.y||y==a.y&&z<a.z);}
 	P3 operator-(const P3&a)const {return (P3){x-a.x,y-a.y,z-a.z};}
 	ld operator|(const P3&a)const {return x*a.x+y*a.y+z*a.z;}
 	P3 operator&(const P3&a)const {return (P3){y*a.z-z*a.y,z*a.x-x*a.z,x*a.y-y*a.x};}
-}ori[N];
+}ori[N],tri[N];
 #define gp3(a) (P3){a.x,a.y,a.x*a.x+a.y*a.y}
 bool incir(int a,int b,int c,int d){
 	P3 aa=gp3(p[a]),bb=gp3(p[b]),cc=gp3(p[c]),dd=gp3(p[d]);
 	if(check(p[a],p[b],p[c])<0)std::swap(bb,cc);
 	return (check(aa,bb,cc)|(dd-aa))<0;
 }
-int et=1,la[N],tot,q[N<<2];
+int et=1,la[N],tot,q[N<<2],map[N][N];
 struct E{int to,l,r;}e[N<<5];
 void add(int x,int y){
 	e[++et]=(E){y,la[x]},e[la[x]].r=et,la[x]=et;
@@ -63,4 +63,29 @@ void delaunay(int l,int r){
 			rd=id;
 		}
 	}
+}
+struct Tri{
+	int x,y,z;//id
+	void sort(){if(x>y)std::swap(x,y);if(x>z)std::swap(x,z);if(y>z)std::swap(y,z);}
+	bool operator<(const Tri&a)const {return x<a.x||x==a.x&&(y<a.y||y==a.y&&z<a.z);}
+	bool operator==(const Tri&a)const {return x==a.x&&y==a.y&&z==a.z;}
+}triangle[N];
+
+void solve(int n,P*_,int&tri_cnt){
+	for(int i=1;i<=n;i++)p[i]=_[i],ori[i]=(P3){p[i].x,p[i].y,i};
+	std::sort(p+1,p+1+n);std::sort(ori+1,ori+1+n);delaunay(1,n);	
+	memset(map,0,sizeof map);
+	for(int i=1;i<=n;i++)
+		for(int x=ori[i].z,y,j=la[i];j;j=e[j].l){
+			y=ori[e[j].to].z,map[x][y]=map[y][x]=1;
+		}
+	tri_cnt=0;
+	for(int i=1;i<=n;++i)
+		for(int j=i+1;j<=n;++j)
+			if(map[i][j])
+				for(int k=j+1;k<=n;++k)
+					if(map[i][k]&&map[j][k]&&std::abs(check(_[i],_[j],_[k]))>1e-3)
+						triangle[++tri_cnt]=(Tri){i,j,k};
+	std::sort(triangle+1,triangle+1+tri_cnt);
+}
 }

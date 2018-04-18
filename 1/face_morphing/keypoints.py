@@ -11,5 +11,11 @@ if __name__=='__main__':
 	with open(args.file+'.txt','w') as f:
 		rec=dic['faces'][0]['face_rectangle']
 		f.write('%d %d %d %d\n'%(rec['top'],rec['left'],rec['width'],rec['height']))
+		y_sum=cnt=x_sum=0
 		for i in dic['faces'][0]['landmark']:
-			f.write('%d %d\n'%(dic['faces'][0]['landmark'][i]['y'],dic['faces'][0]['landmark'][i]['x']))
+			cnt+=1
+			tmp=dic['faces'][0]['landmark'][i]
+			f.write('%d %d\n'%(tmp['y'],tmp['x']))
+			y_sum+=tmp['y']
+			x_sum+=tmp['x']
+		print('%lf %lf'%(y_sum/cnt,x_sum/cnt))
