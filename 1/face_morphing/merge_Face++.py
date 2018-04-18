@@ -2,18 +2,18 @@
 import base64,json,os,argparse,cv2
 
 def main(args):
-	if args.template=='':
-		print('Please specify template filename')
+	if not args.template or args.template=='':
+		print('Please specify template filename, using -t option')
 		return
-	if args.merge=='':
-		print('Please specify merge filename')
+	if not args.merge or args.merge=='':
+		print('Please specify merge filename, using -m option')
 		return
 	if args.rate>100:
 		args.rate=100
 	if args.rate<0:
 		args.rate=0
 	if not os.path.exists(args.template+'.json'):
-		os.system('./keypoints.sh %s'%args.template)
+		os.system('./keypoints.py -f %s'%args.template)
 
 	dic=json.loads(open(args.template+'.json').read())
 	rec=dic['faces'][0]['face_rectangle']

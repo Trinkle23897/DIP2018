@@ -1,1 +1,0 @@
-curl -X POST "https://api-cn.faceplusplus.com/facepp/v3/detect" -F "api_key=iwJEEsmz09d0W-zo9kG8tej9HB5VAEGF" -F "api_secret=1veCRIY5N7ZWESS9qQcBpoeYOZEZAz5h" -F "image_file=@$1" -F "return_landmark=2" > $1.json
