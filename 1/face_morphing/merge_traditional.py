@@ -2,9 +2,9 @@
 import os,cv2,argparse
 
 def main(args):
-	# if not os.path.exists('morphing'):
-	print('generate bin file ...')
-	os.system('g++ morphing.cpp -o morphing -O2')
+	if not os.path.exists('morphing'):
+		print('generate bin file ...')
+		os.system('g++ morphing.cpp -o morphing -O2')
 	if not args.template or args.template=='':
 		print('Please specify template filename, using -t option')
 		return
@@ -21,7 +21,7 @@ def main(args):
 		os.system('./keypoints.py -f %s'%args.template)
 	if not os.path.exists(args.merge+'.txt'):
 		os.system('./keypoints.py -f %s'%args.merge)
-	os.system('./morphing %s %s %s %d'%(args.template,args.merge,args.output,args.rate))
+	os.system('./morphing %s %s %s %d'%(args.template,args.merge,'merge.png',args.rate))
 	print('Output result image in %s'%args.output)
 	if args.output!='merge.png':
 		cv2.imwrite(args.output,cv2.imread('merge.png'))

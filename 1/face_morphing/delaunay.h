@@ -1,13 +1,16 @@
 #include<bits/stdc++.h>
-#define N 310
+#define N 510
 typedef float ld;
 struct P{
 	ld x,y;
 #define PP register const P&
 	bool operator<(PP a)const {return x<a.x||x==a.x&&y<a.y;}
+	P operator+(PP a)const {return (P){x+a.x,y+a.y};}
 	P operator-(PP a)const {return (P){x-a.x,y-a.y};}
+	P operator*(ld p){return (P){x*p,y*p};}
 	ld operator&(PP a)const {return x*a.y-y*a.x;}
 	ld operator|(PP a)const {return x*a.x+y*a.y;}
+	void noise(ld r=1e-2){x+=(rand()&1?1.:-1.)*rand()/2147483647*r;y+=(rand()&1?1.:-1.)*rand()/2147483647*r;}
 }p[N],around[N];
 #define check(a,b,c) ((b-a)&(c-a))
 ld dis2(PP a){return a.x*a.x+a.y*a.y;}
@@ -26,8 +29,8 @@ bool incir(int a,int b,int c,int d){
 	if(check(p[a],p[b],p[c])<0)std::swap(bb,cc);
 	return (check(aa,bb,cc)|(dd-aa))<0;
 }
-int et=1,la[N],tot,q[N<<2],map[N][N];
-struct E{int to,l,r;}e[N<<5];
+int et=1,la[N],tot,q[N<<3],map[N][N],tri_cnt,flag=0;
+struct E{int to,l,r;}e[N<<10];
 void add(int x,int y){
 	e[++et]=(E){y,la[x]},e[la[x]].r=et,la[x]=et;
 	e[++et]=(E){x,la[y]},e[la[y]].r=et,la[y]=et;
@@ -71,21 +74,27 @@ struct Tri{
 	bool operator==(const Tri&a)const {return x==a.x&&y==a.y&&z==a.z;}
 }triangle[N];
 
-void solve(int n,P*_,int&tri_cnt){
-	for(int i=1;i<=n;i++)p[i]=_[i],ori[i]=(P3){p[i].x,p[i].y,i};
+void solve(int n,P*_){
+	if(flag)return;flag=1;
+	for(int i=1;i<=n;i++)p[i]=_[i],p[i].noise(),ori[i]=(P3){p[i].x,p[i].y,i};
 	std::sort(p+1,p+1+n);std::sort(ori+1,ori+1+n);delaunay(1,n);	
 	memset(map,0,sizeof map);
 	for(int i=1;i<=n;i++)
 		for(int x=ori[i].z,y,j=la[i];j;j=e[j].l){
 			y=ori[e[j].to].z,map[x][y]=map[y][x]=1;
+			// printf("link %d %d\n",x,y);
 		}
 	tri_cnt=0;
 	for(int i=1;i<=n;++i)
 		for(int j=i+1;j<=n;++j)
 			if(map[i][j])
 				for(int k=j+1;k<=n;++k)
-					if(map[i][k]&&map[j][k]&&std::abs(check(_[i],_[j],_[k]))>1e-3)
+					if(map[i][k]&&map[j][k]&&std::abs(check(_[i],_[j],_[k]))>1e-4)
 						triangle[++tri_cnt]=(Tri){i,j,k};
 	std::sort(triangle+1,triangle+1+tri_cnt);
+	// tri_cnt=std::unique(triangle+1,triangle+1+tri_cnt)-triangle-1;
+	// for(int i=1;i<=tri_cnt;++i)
+		// printf("%d %d %d\n",triangle[i].x,triangle[i].y,triangle[i].z);
+	// puts("---");
 }
 }
