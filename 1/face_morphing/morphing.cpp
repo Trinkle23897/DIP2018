@@ -97,6 +97,17 @@ struct IMG{
 		pt[++len]=(P){h-1,w/2};
 		pt[++len]=(P){h-1,0};
 		pt[++len]=(P){h/2,0};
+		// //left shoulder
+		// int max=0;++len;
+		// for(int tmp,i=h/2+1;i<h;++i)
+		// 	if(tmp=std::abs(0+buf[getidx(i-1,0,0,w,c)]+buf[getidx(i-1,0,1,w,c)]+buf[getidx(i-1,0,2,w,c)]-(buf[getidx(i,0,0,w,c)]+buf[getidx(i,0,1,w,c)]+buf[getidx(i,0,2,w,c)])),tmp>max)
+		// 		max=tmp,pt[len]=(P){i,0};
+		// //right shoulder
+		// max=0;++len;
+		// for(int tmp,i=h/2+1;i<h;++i)
+		// 	if(tmp=std::abs(0+buf[getidx(i-1,w-1,0,w,c)]+buf[getidx(i-1,w-1,1,w,c)]+buf[getidx(i-1,w-1,2,w,c)]-(buf[getidx(i,w-1,0,w,c)]+buf[getidx(i,w-1,1,w,c)]+buf[getidx(i,w-1,2,w,c)])),tmp>max)
+		// 		max=tmp,pt[len]=(P){i,w-1};		
+
 		// for(int i=1;i<=len;++i)
 		// {
 			// int x=int(pt[i].x+.5),y=int(pt[i].y+.5);
@@ -138,7 +149,7 @@ bool intri(PP p,PP a,PP b,PP c)
 {
 	ld s=std::abs(check(a,b,c));
 	ld s_=std::abs(check(a,p,b))+std::abs(check(b,p,c))+std::abs(check(c,p,a));
-	return std::abs(s-s_)<1e-3;
+	return std::abs(s-s_)<1e-1;
 }
 int main(int argc, char *argv[])
 {
@@ -146,7 +157,16 @@ int main(int argc, char *argv[])
 	ld rate=atoi(argv[4])/100.;
 	IMG img1(fn1),img2(fn2);
 	IMG img3(img1.h,img1.w,3);
-
+	if(atoi(argv[4])==0)
+	{
+		img1.write(output_filename.c_str());
+		return 0;
+	}
+	if(atoi(argv[4])==100)
+	{
+		img2.write(output_filename.c_str());
+		return 0;
+	}
 	assert(img1.c==img2.c);
 	for(int i=1;i<=DT::tri_cnt;++i)
 	{
